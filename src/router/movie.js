@@ -1,5 +1,5 @@
 const express = require('express')
-const movieapp = require('../models/bookmodel')
+const movieapp = require('../models/usermodel')
 const router = new express.Router()
 
 router.post('/movieapp/signup', async(req, res) => {

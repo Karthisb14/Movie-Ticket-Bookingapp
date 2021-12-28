@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('bcryptjs')
 
-const MovieBookingapp = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
     name:{
         type: String,
         required: true,
@@ -40,7 +40,7 @@ const MovieBookingapp = new mongoose.Schema({
 
 })
 
-MovieBookingapp.statics.findbyCredentials = async(email, password) => {
+userSchema.statics.findbyCredentials = async(email, password) => {
 
     const useremail = await movieapp.findOne(email)
 
@@ -59,7 +59,7 @@ MovieBookingapp.statics.findbyCredentials = async(email, password) => {
 }
 
 
-MovieBookingapp.pre('save', async function(next) {
+userSchema.pre('save', async function(next) {
     const moviepassword = this
 
     if(moviepassword.isModified('password')){
@@ -69,6 +69,6 @@ MovieBookingapp.pre('save', async function(next) {
     next()
 
 })
-const movieapp = mongoose.model('Movie-account-Info', MovieBookingapp)
+const movieapp = mongoose.model('user-data', userSchema)
 
-module.exports = movieapp
+module.exports = userSchema

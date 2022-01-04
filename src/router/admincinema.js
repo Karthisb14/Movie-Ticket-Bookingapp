@@ -47,6 +47,11 @@ router.patch('/movieapp/passwordupdate', auth, async(req,res) => {
     if(adminpassword.role === 'user-data'){
         return res.status(400).send({error: 'Invalid details!'})
     }
+    const matchpassword = await bcrypt.compare(req.body.currentpassword, adminpassword.password)
+  
+    if(!matchpassword){
+        return res.send({error:'Invalid Current password'})
+    }
 
     const adminhash = await bcrypt.hash(req.body.password, 8)
     
@@ -58,8 +63,6 @@ router.patch('/movieapp/passwordupdate', auth, async(req,res) => {
         res.status(400).send()
     }
     
-
-
 })
 
 router.patch('/movieapp/updatemovie', auth, async(req, res) => {
@@ -98,8 +101,9 @@ router.delete('/movieapp/delete', auth, async(req, res) => {
         return res.status(400).send({error:"Cannot access"})
     }
 
+
     try{
-        const deleteuser= await movieapp.findOne({email:req.body.email}).deleteOne()
+        const deleteuser = await movieapp.findOneAndUpdate({email:req.body.email}, {isdelete: true}, {new: true})
         
         if(!deleteuser){
             res.status(400).send({error:'Invalid Email'})

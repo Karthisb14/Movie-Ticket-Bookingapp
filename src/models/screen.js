@@ -6,7 +6,7 @@ const movieSchema = new mongoose.Schema({
         unique: true
     },
     Cast:{
-        type: String,
+        type: [String],
     },
     director: {
         type: String,
@@ -28,11 +28,11 @@ const movieSchema = new mongoose.Schema({
     },
     TicketPrice:{
         type: Number,
-        default: 12
+        default: 120
     },
     admin_id:{
         type: mongoose.Schema.Types.ObjectId,
-        ref:'movieapp'
+        ref:'user-data'
     },
     date:{
         type: Date,
@@ -44,7 +44,6 @@ movieSchema.methods.toJSON = function(){
     const bookshow = this
     const bookobject = bookshow.toObject()
 
-    delete bookobject.name
     delete bookobject.admin_id
     return bookobject
 

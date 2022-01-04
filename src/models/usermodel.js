@@ -42,6 +42,10 @@ const userSchema = new mongoose.Schema({
         default: 'user-data',
         enum:[ 'user-data', 'admin']
     },
+    isdelete:{
+        type: Boolean,
+        default: false
+    },
     tokens:[{
         token: {
             type: String,

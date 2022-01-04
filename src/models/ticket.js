@@ -7,6 +7,11 @@ const ticketSchema = mongoose.Schema({
     numberofseats:{
         type: Number
     },
+    seatnumber:{
+        type: [Number],
+        required:true,
+        unique: true
+    },
     showtime:{
         type: String,
         default: '6 PM'
@@ -14,10 +19,10 @@ const ticketSchema = mongoose.Schema({
     TotalAmount:{
         type: Number
     },
-    owner:{
+    owner_id:{
         type: mongoose.Schema.Types.ObjectId,
         required: true,
-        ref: 'movieapp'
+        ref: 'user-data'
     },
     Date:{
         type: Date,
@@ -30,7 +35,7 @@ ticketSchema.methods.toJSON = function(){
     const ticketbooking = this
     const ticketObject = ticketbooking.toObject()
 
-    delete ticketObject.owner,
+    delete ticketObject.owner_id,
     delete ticketObject._id,
     delete ticketObject.__v
     

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 
 const userSchema = new mongoose.Schema({
     name:{
@@ -28,7 +29,6 @@ const userSchema = new mongoose.Schema({
     },
     mobilenumber: {
         type: Number,
-        required: true,
         unique: true,
         minlength:10,
         validate(value){
@@ -36,9 +36,41 @@ const userSchema = new mongoose.Schema({
                 throw new Error('Please Check Mobile Number')
             }
         }
-    }
+    },
+    role:{
+        type: String,
+        default: 'user-data',
+        enum:[ 'user-data', 'admin']
+    },
+    tokens:[{
+        token: {
+            type: String,
+            required: true
+        }
+    }]
 
 })
+
+userSchema.methods.toJSON = function() {
+    const userdetails = this
+    const userObject = userdetails.toObject()
+
+    delete userObject.role,
+    delete userObject.password,
+    delete userObject.tokens
+    return userObject
+}
+
+userSchema.methods.generateAuthToken = async function() {
+
+    const authtoken = this
+
+    const Gentoken = jwt.sign({_id: authtoken._id.toString() }, 'moviebookingapp')
+
+    authtoken.tokens = authtoken.tokens.concat({token: Gentoken})
+    await authtoken.save()
+    return Gentoken
+}
 
 userSchema.statics.findbyCredentials = async(email, password) => {
 
@@ -48,7 +80,6 @@ userSchema.statics.findbyCredentials = async(email, password) => {
         throw new Error('Unable to login')
     }
     
-
     const ismatch = await bcrypt.compare(password, useremail.password)
 
     if(!ismatch){
@@ -58,7 +89,6 @@ userSchema.statics.findbyCredentials = async(email, password) => {
     return useremail
 
 }
-
 
 userSchema.pre('save', async function(next) {
     const moviepassword = this

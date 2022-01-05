@@ -2,9 +2,9 @@ const express = require('express')
 const movieapp = require('../models/usermodel')
 const movieticket = require('../models/ticket')
 const moviedetails = require('../models/screen')
-const seatbooking = require('../models/seat')
 const bcrypt = require('bcryptjs')
 const auth = require('../middleware/auth')
+const { find } = require('../models/usermodel')
 
 const router = new express.Router()
 
@@ -27,6 +27,9 @@ router.post('/movieapp/login', async(req, res) => {
     
     try{
         const movielogin = await movieapp.findbyCredentials(req.body.email, req.body.password)
+        if(movielogin.isdelete === true){
+            return res.status(400).send({error:'Your account already deleted!'})
+        }
         const token = await movielogin.generateAuthToken()
         res.status(200).send({movielogin, token})
     }catch(e){
@@ -51,28 +54,32 @@ router.post('/movieapp/logout', auth, async(req, res) => {
 
 router.get('/movieapp/movielist', auth, async(req,res) => {
 
-    const moviesearch = await moviedetails.findOne({moviename: req.body.moviename})
+    const searchmovie = req.query.moviename
+
+    const movielist = await moviedetails.find()
+
+    const findmovie = await moviedetails.findOne({moviename: searchmovie})
+
+    if(searchmovie === undefined){
+        return res.send({movielist})
+    }
+
+    if(findmovie !== null){
+        return res.send({findmovie})
+    }
+
+    if(findmovie === null){
+        return res.send({error:'No Movie Found!'})
+    }
     
-    if(moviesearch){
-        return res.status(200).send({moviesearch})
-    }
-
-    try{
-      const movielist = await moviedetails.find()
-      res.status(200).send({movielist})
-    }catch(e){
-       res.status(400).send(e)
-    }
-
 })
-
 
 router.post('/movieapp/ticketbooking', auth, async(req, res) => {
 
     const loginaccount = req.movieappdetails
 
     if(loginaccount.role === 'admin'){
-        return res.status(400).send({error:'Invalid details'})
+        return res.status(400).send({error:'Admin cannot booking!'})
     }
 
     const checkmovie = await moviedetails.findOne({moviename: req.body.moviename})
@@ -91,21 +98,15 @@ router.post('/movieapp/ticketbooking', auth, async(req, res) => {
     const ticketbook = new movieticket({
         moviename: req.body.moviename,
         numberofseats: req.body.numberofseats,
-        owner: loginaccount._id,
+        seatnumber: req.body.seatnumber,
+        owner_id: loginaccount._id,
         TotalAmount: userticketbook
-    })
-
-    const seatbook = new seatbooking({
-        moviename: req.body.moviename,
-        seatNumber: req.body.seatNumber,
-        user_id: loginaccount._id
     })
 
     try{
         const ticketupdate = await moviedetails.findOneAndUpdate({moviename: req.body.moviename}, {ticketavailable: ticketnew}, {new: true})
         await ticketbook.save()
         await ticketupdate.save()
-        await seatbook.save()
         res.send({success: 'your ticket is booked Successfully!', ticketbook})
 
     }catch(e){
@@ -113,25 +114,40 @@ router.post('/movieapp/ticketbooking', auth, async(req, res) => {
     } 
 })
 
-router.patch('/movieapp/password', auth, async(req,res) => {
-
-    const data = req.movieappdetails
-
-    const value = await bcrypt.compare(req.body.password, data.password)
-
-    if(value === true){
-        res.send({error: 'same password not allowed!'})
-    }
-
-    const passwordhash = await bcrypt.hash(req.body.password, 8)
+router.get('/movieapp/bookinghistory', auth, async(req, res) => {
 
     try{
-        const updatemoviepw = await movieapp.findOneAndUpdate({email:req.body.email}, {password: passwordhash}, {new: true})
-        res.send(updatemoviepw)
-       
+        const bookingdetails = await movieticket.find({owner_id: req.movieappdetails._id})
+        res.status(200).send(bookingdetails)
+        
+    }catch(e){
+        res.status(400).send(e)
+    }
+    
+})
+
+router.patch('/movieapp/password', auth, async(req,res) => {
+
+    const userpassword = req.movieappdetails.password
+    
+    const matchpassword = await bcrypt.compare(req.body.currentpassword, userpassword)
+  
+    if(!matchpassword){
+        return res.send({error:'Invalid Current password'})
+    }
+    const hashpassword = await bcrypt.hash(req.body.password, 8)
+
+    try{
+        const updatepassword = await movieapp.findOneAndUpdate({email: req.body.email}, {password: hashpassword}, {new: true})
+        
+        if(!updatepassword){
+            res.send(e)
+        }
+        await updatepassword.save()
+        res.send(updatepassword)
+
     }catch(e){
         res.status(400).send()
-
     }
 
 })

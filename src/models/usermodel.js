@@ -1,8 +1,9 @@
 const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 
-const MovieSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
     name:{
         type: String,
         required: true,
@@ -28,7 +29,6 @@ const MovieSchema = new mongoose.Schema({
     },
     mobilenumber: {
         type: Number,
-        required: true,
         unique: true,
         minlength:10,
         validate(value){
@@ -36,18 +36,54 @@ const MovieSchema = new mongoose.Schema({
                 throw new Error('Please Check Mobile Number')
             }
         }
-    }
+    },
+    role:{
+        type: String,
+        default: 'user-data',
+        enum:[ 'user-data', 'admin']
+    },
+    isdelete:{
+        type: Boolean,
+        default: false
+    },
+    tokens:[{
+        token: {
+            type: String,
+            required: true
+        }
+    }]
 
 })
 
-MovieSchema.statics.findbyCredentials = async(email, password) => {
+userSchema.methods.toJSON = function() {
+    const userdetails = this
+    const userObject = userdetails.toObject()
 
-    const useremail = await movieapp.findOne(email)
+    delete userObject.role,
+    delete userObject.password,
+    delete userObject.tokens
+    return userObject
+}
+
+userSchema.methods.generateAuthToken = async function() {
+
+    const authtoken = this
+
+    const Gentoken = jwt.sign({_id: authtoken._id.toString() }, 'moviebookingapp')
+
+    authtoken.tokens = authtoken.tokens.concat({token: Gentoken})
+    await authtoken.save()
+    return Gentoken
+}
+
+userSchema.statics.findbyCredentials = async(email, password) => {
+
+    const useremail = await movieapp.findOne({email})
 
     if(!useremail){
         throw new Error('Unable to login')
     }
-
+    
     const ismatch = await bcrypt.compare(password, useremail.password)
 
     if(!ismatch){
@@ -58,8 +94,7 @@ MovieSchema.statics.findbyCredentials = async(email, password) => {
 
 }
 
-
-MovieSchema.pre('save', async function(next) {
+userSchema.pre('save', async function(next) {
     const moviepassword = this
 
     if(moviepassword.isModified('password')){
@@ -69,6 +104,6 @@ MovieSchema.pre('save', async function(next) {
     next()
 
 })
-const movieapp = mongoose.model('Userdata', MovieSchema)
+const movieapp = mongoose.model('user-data', userSchema)
 
 module.exports = movieapp

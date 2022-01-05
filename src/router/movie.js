@@ -65,7 +65,7 @@ router.get('/movieapp/movielist', auth, async(req,res) => {
 // GET /movieapp?moviename
 router.get('/movieapp/moviename', auth, async(req, res) => {
    
-    const moviename = await moviedetails.findOne(req.query)
+    const moviename = await moviedetails.findOne({moviename: req.query.moviename})
 
     if(moviename){
         return res.status(200).send({moviename})

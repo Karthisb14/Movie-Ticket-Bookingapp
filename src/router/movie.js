@@ -4,6 +4,7 @@ const movieticket = require('../models/ticket')
 const moviedetails = require('../models/screen')
 const bcrypt = require('bcryptjs')
 const auth = require('../middleware/auth')
+const { find } = require('../models/usermodel')
 
 const router = new express.Router()
 
@@ -53,29 +54,25 @@ router.post('/movieapp/logout', auth, async(req, res) => {
 
 router.get('/movieapp/movielist', auth, async(req,res) => {
 
-    try{
-        const movielist = await moviedetails.find()
-        res.status(200).send({movielist})
-    }catch(e){
-        res.status(400).send(e)
+    const searchmovie = req.query.moviename
+
+    const movielist = await moviedetails.find()
+
+    const findmovie = await moviedetails.findOne({moviename: searchmovie})
+
+    if(searchmovie === undefined){
+        return res.send({movielist})
     }
 
+    if(findmovie !== null){
+        return res.send({findmovie})
+    }
+
+    if(findmovie === null){
+        return res.send({error:'No Movie Found!'})
+    }
+    
 })
-
-// GET /movieapp?moviename
-router.get('/movieapp/moviename', auth, async(req, res) => {
-   
-    const moviename = await moviedetails.findOne({moviename: req.query.moviename})
-
-    if(moviename){
-        return res.status(200).send({moviename})
-    }
-
-    if(moviename === null){
-        return res.status(400).send({error:'No Movie found'})
-    }
-})
-
 
 router.post('/movieapp/ticketbooking', auth, async(req, res) => {
 

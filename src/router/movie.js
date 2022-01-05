@@ -51,25 +51,23 @@ router.post('/movieapp/logout', auth, async(req, res) => {
     }
 })
 
-
 router.get('/movieapp/movielist', auth, async(req,res) => {
 
     const searchmovie = req.query.moviename
 
-    const movielist = await moviedetails.find()
-
-    const findmovie = await moviedetails.findOne({moviename: searchmovie})
-
-    if(searchmovie === undefined){
-        return res.send({movielist})
+    if(searchmovie){
+        const findmovie = await moviedetails.findOne({moviename: searchmovie})
+        if(findmovie){
+            return res.status(200).send({findmovie})
+        }else{
+           return res.status(400).send({error:'No Movie Found!'}) 
+        }
     }
 
-    if(findmovie !== null){
-        return res.send({findmovie})
-    }
-
-    if(findmovie === null){
-        return res.send({error:'No Movie Found!'})
+    const movielist = await moviedetails.find() 
+    
+    if(movielist){
+        res.status(200).send({movielist})
     }
     
 })
